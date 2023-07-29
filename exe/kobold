@@ -1,5 +1,52 @@
 #!/usr/bin/env ruby
 
 require 'Kobold'
+require 'tty-option'
+require 'pry'
 
-puts "hey this is the gem working!!!!!"
+module Kobold
+  class Command
+    include TTY::Option
+
+    usage do
+      program "kobold"
+
+      command "init"
+
+      desc "Initializes empty Kobold configuration file"
+    end
+
+    argument :command do
+      optional
+      desc "askjd"
+    end
+
+    flag :help do
+      short "-h"
+      long "--help"
+      desc "Print usage"
+    end
+
+    flag :init do
+      desc "initialize"
+    end
+
+    def run
+      if params[:help]
+        print help
+      elsif params.errors.any?
+        puts params.errors.summary
+      else
+        pp params.to_h
+      end
+    end
+  end
+end
+
+
+cmd = Kobold::Command.new
+parse = cmd.parse
+run = cmd.run
+if cmd.params[:command] == "init"
+  Kobold.init  
+end
