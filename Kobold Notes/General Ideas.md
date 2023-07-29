@@ -54,3 +54,23 @@ Here is a very long but promising explanation of how Rbenv manages shims: https:
 Need to have a shims directory like RBENV. -> /home/username/.rbenv/shims
 
 Directory for how RBENV sets up shims: rbenv/libexec/rbenv-shims
+
+---
+
+[File class doc](https://rubydoc.info/stdlib/core/File)
+
+`.symlink(old_name, new_name) ⇒ 0`
+
+    Creates a symbolic link called new_name for the existing file old_name.
+
+`.symlink?(file_name) ⇒ Boolean`
+
+    Returns true if the named file is a symbolic link.
+
+`.realpath(pathname[, dir_string]) ⇒ Object`
+
+    Returns the real (absolute) pathname of pathname in the actual filesystem not containing symlinks or useless dots.
+    
+---
+
+[Ruby Git Gem](https://github.com/ruby-git/ruby-git)
