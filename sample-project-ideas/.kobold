@@ -1,4 +1,6 @@
 ; Kobold Version File
+[kobold_config]
+version=0.1.0
 
 [raysan5/raylib]
 source=https://github.com

@@ -74,3 +74,5 @@ Directory for how RBENV sets up shims: rbenv/libexec/rbenv-shims
 ---
 
 [Ruby Git Gem](https://github.com/ruby-git/ruby-git)
+
+[Ruby Command Line Option Parser](https://github.com/piotrmurach/tty-option)
