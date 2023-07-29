@@ -18,26 +18,30 @@ module Kobold
       first_time_setup if !File.directory? "#{KOBOLD_DIR}/repo_cache"
       config = TTY::Config.new
       config.append_path Dir.pwd
-      config.read ".kobold", format: :ini
-      if Kobold::FILE_VERSION == config.settings["kobold_config"]["version"]
-        config.settings.delete "kobold_config"
-        config.settings.each do |key, value|
-          repo_dir = "#{KOBOLD_DIR}/repo_cache/#{key.gsub!('/', '-')}"
+      settings = config.read ".kobold", format: :ini
+      if Kobold::FILE_VERSION == settings["kobold_config"]["format_version"]
+        settings.delete "kobold_config"
+        settings.each do |key, value|
+          puts "key:#{key}"
+          repo_dir = "#{KOBOLD_DIR}/repo_cache/#{key.gsub('/', '-')}"
           if !Dir.exist? "#{repo_dir}/master"
-            File.mkdir_p repo_dir
-            Git.clone "#{repo_dir}/master"
+            FileUtils.mkdir_p "#{repo_dir}/master"
+            puts "#{value["source"]}/#{key}.git", "#{repo_dir}/master"
+            Git.clone "#{value["source"]}/#{key}.git", "#{repo_dir}/master"
           end
-          if key["dir"].end_with? "/"
-            File.mkdir_p key["dir"]
-            File.symlink "#{repo_dir}/master", "#{key["dir"]}/#{key.split("/").last}" 
+          if value["dir"].end_with? "/"
+            FileUtils.mkdir_p value["dir"]
+            File.symlink "#{repo_dir}/master", "#{value["dir"]}/#{key.split("/").last}" 
           else
-            dir_components = key["dir"].split "/"
+            dir_components = value["dir"].split "/"
             dir_components.pop
             dir_components = dir_components.join "/"
-            File.mkdir_p dir_components
-            File.symlink "#{repo_dir}/master", key["dir"]
+            FileUtils.mkdir_p dir_components
+            File.symlink "#{repo_dir}/master", value["dir"]
           end
         end
+      else
+        puts "Error: wrong format version"
       end
     end
 
