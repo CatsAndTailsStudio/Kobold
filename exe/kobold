@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'Kobold'
+
+puts "hey this is the gem working!!!!!"
