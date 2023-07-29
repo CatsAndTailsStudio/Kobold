@@ -1,12 +1,21 @@
 ; Kobold Version File
 
-[raysan5/raygui]
-source=https://github.com
-hash=12345asdf
-;config_name=
-
 [raysan5/raylib]
 source=https://github.com
-hash=asdf12234
+branch=master
+hash=12345asdf
+; Optional
 config_name=jpg
+; Optional
+config_version=1.0
 
+[raysan5/raygui]
+source=https://github.com
+branch=master
+hash=asdf12234
+
+[my/prototype_repo]
+source=https://github.com
+branch=master
+; Set hash to dev to ignore what hash is selected
+hash=dev
