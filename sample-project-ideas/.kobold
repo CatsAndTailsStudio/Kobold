@@ -4,6 +4,9 @@
 source=https://github.com
 branch=master
 hash=12345asdf
+; If leading slash: place git repo in that directory
+; If no leading slash: name git repo as that
+dir=external/
 ; Optional
 config_name=jpg
 ; Optional
@@ -13,9 +16,13 @@ config_version=1.0
 source=https://github.com
 branch=master
 hash=asdf12234
+dir=external/
 
 [my/prototype_repo]
 source=https://github.com
 branch=master
 ; Set hash to dev to ignore what hash is selected
+; you must have a config_name to do this
 hash=dev
+dir=external/prototype
+config_name=development
