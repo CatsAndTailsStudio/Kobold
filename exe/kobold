@@ -47,6 +47,9 @@ end
 cmd = Kobold::Command.new
 parse = cmd.parse
 run = cmd.run
-if cmd.params[:command] == "init"
+
+if cmd.params[:command] == nil || cmd.params == "invoke"
+  Kobold.invoke
+elsif cmd.params[:command] == "init"
   Kobold.init  
 end

@@ -6,7 +6,7 @@ require 'fileutils'
 require 'git'
 
 module Kobold
-  KOBOLD_DIR = "~/.local/share/Kobold"
+  KOBOLD_DIR = "#{Dir.home}/.local/share/Kobold"
   class << self
 
     # read configuration file
@@ -19,7 +19,7 @@ module Kobold
       config = TTY::Config.new
       config.append_path Dir.pwd
       settings = config.read ".kobold", format: :ini
-      if Kobold::FILE_VERSION == settings["kobold_config"]["format_version"]
+      if Kobold::FILE_VERSION.equal? settings["kobold_config"]["format_version"]
         settings.delete "kobold_config"
         settings.each do |key, value|
           puts "key:#{key}"
