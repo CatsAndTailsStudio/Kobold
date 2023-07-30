@@ -75,13 +75,14 @@ module Kobold
           # build the symlink
           if value["dir"].end_with? "/"
             FileUtils.mkdir_p value["dir"]
-            File.symlink target_symlink, "#{value['dir']}/#{key.split('/').last}" 
+            File.symlink target_symlink, "#{value['dir']}/#{key.split('/').last}" if !File.exist? target_symlink
+
           else
             dir_components = value["dir"].split "/"
             dir_components.pop
             dir_components = dir_components.join "/"
             FileUtils.mkdir_p dir_components
-            File.symlink target_symlink, value["dir"]
+            File.symlink target_symlink, value["dir"] if !File.exist? target_symlink
           end
 
         end
