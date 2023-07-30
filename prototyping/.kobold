@@ -4,3 +4,4 @@ format_version = 0.1.0
 [raysan5/raylib]
 source = https://github.com
 dir = external/
+commit = '0851960'
