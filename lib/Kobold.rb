@@ -43,10 +43,10 @@ module Kobold
           end
 
           target_symlink = nil
-          # TODO
           # check if requested version exists
           if value["tag"]
             dir_name = value["tag"].to_s.gsub("/","-")
+            # TODO make the thing
           else # use hash as name
             if value["commit"]
               # use given commit name, also check it exists
