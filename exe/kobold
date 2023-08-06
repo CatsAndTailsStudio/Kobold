@@ -11,24 +11,19 @@ module Kobold
     usage do
       program "kobold"
 
-      command "init"
+      commands "init", "invoke"
 
-      desc "Initializes empty Kobold configuration file"
     end
 
     argument :command do
       optional
-      desc "askjd"
+      desc "Accepts commands for Kobold to execute."
     end
 
     flag :help do
       short "-h"
       long "--help"
-      desc "Print usage"
-    end
-
-    flag :init do
-      desc "initialize"
+      desc "Print usage."
     end
 
     def run
@@ -37,7 +32,7 @@ module Kobold
       elsif params.errors.any?
         puts params.errors.summary
       else
-        pp params.to_h
+        #pp params.to_h
       end
     end
   end
@@ -50,6 +45,16 @@ run = cmd.run
 
 if cmd.params[:command] == nil || cmd.params == "invoke"
   Kobold.invoke
-elsif cmd.params[:command] == "init"
-  Kobold.init  
+else
+  case cmd.params[:command]
+  when "add"
+  when "remove"
+  when "update"
+  when "list"
+    Kobold.list
+  when "init"
+    Kobold.init
+  else
+    print cmd.help
+  end
 end
