@@ -2,7 +2,7 @@
 
 require 'Kobold'
 require 'tty-option'
-require 'pry'
+#require 'pry'
 
 module Kobold
   class Command
