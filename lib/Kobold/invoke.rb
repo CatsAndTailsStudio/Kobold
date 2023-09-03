@@ -4,31 +4,41 @@ require "tty-config"
 require 'fileutils'
 require 'git'
 
+#require_relative "Kobold/vars.rb"
+
 module Kobold
   class << self
     def invoke
       Kobold.first_time_setup if !File.directory? "#{KOBOLD_DIR}/repo_cache"
+      if !File.file? "#{Dir.pwd}/.kobold"
+        puts "ERROR: Kobold file not found at '#{Dir.pwd}'"
+        return
+      end
       settings = Kobold.read_config(Dir.pwd)
 
       #puts Kobold::FORMAT_VERSION + " " + settings["kobold_config"]["format_version"]
-      if Kobold::FORMAT_VERSION == settings["kobold_config"]["format_version"]
-        settings.delete "kobold_config"
+      if Kobold::FORMAT_VERSION == settings["_kobold_config"]["format_version"]
+        #settings.delete "kobold_config"
 
         # iterate over all dependencies
         settings.each do |key, value|
-          puts "key:#{key}"
+          if Kobold::CONFIG_TITLES.include? key
+            #puts "skipping #{key}"
+            next
+          end
           repo_dir = "#{KOBOLD_DIR}/repo_cache/#{key.gsub('/', '-')}"
 
-          master_repo = nil;
-          # check if master exists
-          if !Dir.exist? "#{repo_dir}/master" # TODO: make this properly check for git repo
+          source_repo = nil;
+          # check if source exists
+          if !Dir.exist? "#{repo_dir}/source" # TODO: make this properly check for git repo
             # if it doesnt, make it
-            FileUtils.mkdir_p "#{repo_dir}/master"
+            FileUtils.mkdir_p "#{repo_dir}/source"
             FileUtils.mkdir_p "#{repo_dir}/worktrees"
-            puts "#{value["source"]}/#{key}.git", "#{repo_dir}/master"
-            master_repo = Git.clone "#{value["source"]}/#{key}.git", "#{repo_dir}/master"
+            FileUtils.mkdir_p "#{repo_dir}/branches" # these are also worktrees, but just for the branch specifically if possible. TODO for later
+            #puts "#{value["source"]}/#{key}.git", "#{repo_dir}/source"
+            source_repo = Git.clone "#{value["source"]}/#{key}.git", "#{repo_dir}/source"
           else
-            master_repo = Git.open("#{repo_dir}/master")
+            source_repo = Git.open("#{repo_dir}/source")
           end
 
           target_symlink = nil
@@ -40,15 +50,19 @@ module Kobold
             if value["commit"]
               # use given commit name, also check it exists
               begin # git errors when it does not find the hash
-                if value["commit"].is_a? Float
-                  value["commit"] = value["commit"].to_i.to_s
-                end
-                commit_sha = master_repo.object(value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")).sha;
-                if commit_sha
+                #if value["commit"].is_a? Float
+                #  value["commit"] = value["commit"].to_i.to_s
+                #end
+                commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
+                if commit_val == 'latest'
+                  # TODO just use source git repo
+                  target_symlink = "#{repo_dir}/source"
+                elsif commit_sha
+                  commit_sha = source_repo.object(commit_val).sha;
                   target_symlink = "#{repo_dir}/worktrees/#{commit_sha}"
                   if !Dir.exist? target_symlink
                     # make it
-                    master_repo.worktree(target_symlink, commit_sha).add
+                    source_repo.worktree(target_symlink, commit_sha).add
                   end
                 else
                   raise "Cannot find commit"
@@ -64,8 +78,8 @@ module Kobold
           # build the symlink
           if value["dir"].end_with? "/"
             FileUtils.mkdir_p value["dir"]
-            puts "value: " + value["dir"] + key.split('/').last
-            puts !File.symlink?(value["dir"] + key.split('/').last)
+            #puts "value: " + value["dir"] + key.split('/').last
+            #puts !File.symlink?(value["dir"] + key.split('/').last)
 
             symlink1 = File.symlink?(value["dir"] + key.split('/').last)
             symlink2 = File.symlink? value["dir"]
@@ -91,6 +105,14 @@ module Kobold
             #File.symlink(target_symlink, value["dir"])
           end
 
+        end
+
+        # iterate over all sub kobold files
+        sub_kobolds = if settings["_kobold_include"] then settings["_kobold_include"]["files"].strip.split("\n") else [] end
+        sub_kobolds.each do |path|
+          Dir.chdir(path.strip) do
+            invoke
+          end
         end
 
       else

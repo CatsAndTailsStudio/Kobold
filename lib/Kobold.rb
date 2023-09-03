@@ -5,6 +5,7 @@ require "tty-config"
 require 'fileutils'
 require 'git'
 
+require_relative "Kobold/vars.rb"
 require_relative "Kobold/read_config.rb"
 require_relative "Kobold/first_time_setup.rb"
 require_relative "Kobold/invoke.rb"
