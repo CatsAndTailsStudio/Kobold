@@ -1,15 +1,28 @@
 [_kobold_config]
-format_version = 0.2.0
+format_version = 0.3.0
 
-[_kobold_include]
-files = "
-dir1/
-dir2/
-"
+;[_kobold_include]
+;files = "
+;dir1/
+;dir2/
+;"
 
-[raysan5/raylib]
+[raylib-linux]
+repo = raysan5/raylib
+source = https://github.com
+dir = external/linux-x64/
+commit = 'b8cd102'
+label = linux-x64
+
+[raylib-web]
+repo = raysan5/raylib
+source = https://github.com
+dir = external/emscripten/
+commit = 'b8cd102'
+label = web
+
+[raygui]
+repo = raysan5/raygui
 source = https://github.com
 dir = external/
-commit = 'latest'
-
 

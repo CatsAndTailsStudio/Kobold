@@ -16,17 +16,13 @@ module Kobold
       end
       settings = Kobold.read_config(Dir.pwd)
 
-      #puts Kobold::FORMAT_VERSION + " " + settings["kobold_config"]["format_version"]
       if Kobold::FORMAT_VERSION == settings["_kobold_config"]["format_version"]
-        #settings.delete "kobold_config"
-
         # iterate over all dependencies
         settings.each do |key, value|
-          if Kobold::CONFIG_TITLES.include? key
-            #puts "skipping #{key}"
+          if key[0] == '_' 
             next
           end
-          repo_dir = "#{KOBOLD_DIR}/repo_cache/#{key.gsub('/', '-')}"
+          repo_dir = "#{KOBOLD_DIR}/repo_cache/#{value['repo'].gsub('/', '-')}"
 
           source_repo = nil;
           # check if source exists
@@ -34,45 +30,108 @@ module Kobold
             # if it doesnt, make it
             FileUtils.mkdir_p "#{repo_dir}/source"
             FileUtils.mkdir_p "#{repo_dir}/worktrees"
-            FileUtils.mkdir_p "#{repo_dir}/branches" # these are also worktrees, but just for the branch specifically if possible. TODO for later
-            #puts "#{value["source"]}/#{key}.git", "#{repo_dir}/source"
-            source_repo = Git.clone "#{value["source"]}/#{key}.git", "#{repo_dir}/source"
+            FileUtils.mkdir_p "#{repo_dir}/worktrees/branched"
+            FileUtils.mkdir_p "#{repo_dir}/worktrees/sha"
+            FileUtils.mkdir_p "#{repo_dir}/worktrees/labelled"
+            FileUtils.mkdir_p "#{repo_dir}/branches"
+            source_repo = clone_git_repo "#{value["source"]}/#{value['repo']}.git", "#{repo_dir}/source" 
           else
             source_repo = Git.open("#{repo_dir}/source")
           end
 
+          # must be scoped here, used in various inner scopes
           target_symlink = nil
-          # check if requested version exists
-          if value["tag"]
-            dir_name = value["tag"].to_s.gsub("/","-")
-            # TODO make the thing
-          else # use hash as name
-            if value["commit"]
-              # use given commit name, also check it exists
-              begin # git errors when it does not find the hash
-                #if value["commit"].is_a? Float
-                #  value["commit"] = value["commit"].to_i.to_s
-                #end
-                commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
-                if commit_val == 'latest'
-                  # TODO just use source git repo
-                  target_symlink = "#{repo_dir}/source"
-                elsif commit_sha
-                  commit_sha = source_repo.object(commit_val).sha;
-                  target_symlink = "#{repo_dir}/worktrees/#{commit_sha}"
-                  if !Dir.exist? target_symlink
-                    # make it
-                    source_repo.worktree(target_symlink, commit_sha).add
-                  end
-                else
-                  raise "Cannot find commit"
-                end
-              rescue # we catch this error here
-                raise "Cannot find commit"
+
+          #   Structure of a segment of following code:
+          # if it declares a branch: make the branch
+          # if it has a label
+          #   it must have a sha
+          #   if it has a branch
+          #     use that branch + sha
+          #   else
+          #     use source + sha
+          #   end
+          # else check if it has a branch
+          #   if it has a sha
+          #     make the sha
+          #   else
+          #     make it point to branch
+          #   end
+          # else check if it has a sha
+          #   make the sha on the source
+          # else
+          #   use source
+          # end
+
+          branch_repo = nil
+          if value["branch"]
+            branch_repo_path = "#{repo_dir}/branches/#{value["branch"]}"
+            # check if branch already exists, make it if it doesnt
+            if !Dir.exist? branch_repo_path
+              FileUtils.mkdir_p "#{repo_dir}/branches"
+              source_repo.worktree(branch_repo_path, value["branch"]).add
+            end
+            branch_repo = Git.open(branch_repo_path)
+          end
+
+          target_symlink = nil
+          # if it has a label
+          if value["label"]
+
+            if !value["commit"]
+              raise "Must give a specific sha when making a label. #{key} has no specific sha given"
+            end
+            if value["branch"]
+              worktree_path = "#{repo_dir}/worktrees/labelled/#{value["label"]}/#{value["branch"]}"
+              _commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
+              worktree_sha = branch_repo.object(_commit_val).sha;
+              target_symlink = "#{worktree_path}/#{worktree_sha}"
+              if !Dir.exist? target_symlink
+                FileUtils.mkdir_p "#{worktree_path}"
+                branch_repo.worktree(target_symlink, worktree_sha).add
               end
             else
-              raise "No commit given for #{key}"
+              branch = source_repo.branch.name
+              worktree_path = "#{repo_dir}/worktrees/labelled/#{value["label"]}/#{branch}"
+              _commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
+              worktree_sha = source_repo.object(_commit_val).sha;
+              target_symlink = "#{worktree_path}/#{worktree_sha}"
+              if !Dir.exist? target_symlink
+                FileUtils.mkdir_p "#{worktree_path}"
+                source_repo.worktree(target_symlink, worktree_sha).add
+              end
             end
+
+          elsif value["branch"]
+
+            if value['sha']
+              worktree_path = "#{repo_dir}/worktrees/branched/#{branch}"
+              _commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
+              worktree_sha = branch_repo.object(_commit_val).sha;
+              target_symlink = "#{worktree_path}/#{worktree_sha}"
+              if !Dir.exist? target_symlink
+                FileUtils.mkdir_p "#{worktree_path}"
+                branch_repo.worktree(target_symlink, worktree_sha).add
+              end
+            else
+              target_symlink = "#{repo_dir}/branches/#{value['branch']}"
+            end
+
+          elsif value["commit"]
+
+            worktree_path = "#{repo_dir}/worktrees/sha"
+            _commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
+            worktree_sha = source_repo.object(_commit_val).sha;
+            target_symlink = "#{worktree_path}/#{worktree_sha}"
+            if !Dir.exist? target_symlink
+              FileUtils.mkdir_p "#{worktree_path}"
+              source_repo.worktree(target_symlink, worktree_sha).add
+            end
+
+          else
+
+            target_symlink = "#{repo_dir}/source"
+
           end
 
           # build the symlink
@@ -81,11 +140,14 @@ module Kobold
             #puts "value: " + value["dir"] + key.split('/').last
             #puts !File.symlink?(value["dir"] + key.split('/').last)
 
-            symlink1 = File.symlink?(value["dir"] + key.split('/').last)
+            symlink1 = File.symlink?(value["dir"] + value['repo'].split('/').last)
             symlink2 = File.symlink? value["dir"]
 
             if !(symlink1 || symlink2)
-              File.symlink(target_symlink, "#{value['dir']}/#{key.split('/').last}")
+              puts "value['dir'] #{value['dir']}"
+              puts "value['repo'] #{value['repo']}"
+              puts "target_symlink #{target_symlink}"
+              File.symlink(target_symlink, "#{value['dir']}/#{value['repo'].split('/').last}")
             end
             #File.symlink(target_symlink, "#{value['dir']}/#{key.split('/').last}")
 
@@ -96,7 +158,7 @@ module Kobold
             FileUtils.mkdir_p dir_components
             File.symlink(target_symlink, value["dir"]) if !File.symlink? value["dir"]
 
-            symlink1 = File.symlink?(value["dir"] + key.split('/').last)
+            symlink1 = File.symlink?(value["dir"] + ['repo'].split('/').last)
             symlink2 = File.symlink? value["dir"]
 
             if !(symlink1 || symlink2)
@@ -118,6 +180,23 @@ module Kobold
       else
         raise "Wrong format version"
       end
+    end
+
+    private
+
+    def clone_git_repo(url, path)
+      progress_bar = TTY::ProgressBar.new("[:bar] Cloning: #{url} ", bar_format: :blade, total: nil, width: 45)
+
+      thread = Thread.new(abort_on_exception: true) do
+        Git.clone url, path
+      end
+      progress_bar.start
+      while thread.status
+        progress_bar.advance
+        sleep 0.016
+      end
+      puts
+      return thread.value
     end
   end
 end
