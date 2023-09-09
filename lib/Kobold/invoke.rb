@@ -144,9 +144,6 @@ module Kobold
             symlink2 = File.symlink? value["dir"]
 
             if !(symlink1 || symlink2)
-              puts "value['dir'] #{value['dir']}"
-              puts "value['repo'] #{value['repo']}"
-              puts "target_symlink #{target_symlink}"
               File.symlink(target_symlink, "#{value['dir']}/#{value['repo'].split('/').last}")
             end
             #File.symlink(target_symlink, "#{value['dir']}/#{key.split('/').last}")
@@ -180,6 +177,7 @@ module Kobold
       else
         raise "Wrong format version"
       end
+      puts "Done!"
     end
 
     private
