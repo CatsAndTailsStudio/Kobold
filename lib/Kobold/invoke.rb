@@ -155,7 +155,7 @@ module Kobold
             FileUtils.mkdir_p dir_components
             File.symlink(target_symlink, value["dir"]) if !File.symlink? value["dir"]
 
-            symlink1 = File.symlink?(value["dir"] + ['repo'].split('/').last)
+            symlink1 = File.symlink?(value["dir"] + value['repo'].split('/').last)
             symlink2 = File.symlink? value["dir"]
 
             if !(symlink1 || symlink2)
