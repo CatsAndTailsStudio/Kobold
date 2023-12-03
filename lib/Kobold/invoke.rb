@@ -121,7 +121,17 @@ module Kobold
 
             worktree_path = "#{repo_dir}/worktrees/sha"
             _commit_val = value["commit"].to_s.delete_prefix('"').delete_suffix('"').delete_prefix("'").delete_suffix("'")
-            worktree_sha = source_repo.object(_commit_val).sha;
+
+            worktree_sha ||= :scoped # make variable in this scope instead of begin rescue scope
+            begin
+              worktree_sha = source_repo.object(_commit_val).sha;
+            rescue Git::FailedError => error
+              puts 'ERROR: Most likely failed to find SHA.'
+              puts '       Try to run "kobold fetch" or make sure SHA is valid'
+              puts "       Original Error: #{error.message}"
+              exit
+            end
+
             target_symlink = "#{worktree_path}/#{worktree_sha}"
             if !Dir.exist? target_symlink
               FileUtils.mkdir_p "#{worktree_path}"
@@ -134,8 +144,10 @@ module Kobold
 
           end
 
+          value['dir'] ||= './' # by default create in current dir if not specified
+
           # build the symlink
-          if value["dir"].end_with? "/"
+          if value["dir"].end_with?("/")
             FileUtils.mkdir_p value["dir"]
             #puts "value: " + value["dir"] + key.split('/').last
             #puts !File.symlink?(value["dir"] + key.split('/').last)

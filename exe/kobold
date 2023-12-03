@@ -52,6 +52,8 @@ else
   when "update"
   when "list"
     Kobold.list
+  when "fetch"
+    Kobold.fetch
   when "init"
     Kobold.init
   when "version"
