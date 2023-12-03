@@ -54,6 +54,10 @@ else
     Kobold.list
   when "init"
     Kobold.init
+  when "version"
+    Kobold.version
+  when "v"
+    Kobold.version
   else
     print cmd.help
   end
